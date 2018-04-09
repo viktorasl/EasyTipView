@@ -61,9 +61,25 @@ public extension EasyTipView {
      - parameter preferences: The preferences which will configure the EasyTipView.
      - parameter delegate:    The delegate.
      */
-    public class func show(animated: Bool = true, forView view: UIView, withinSuperview superview: UIView? = nil, text:  String, preferences: Preferences = EasyTipView.globalPreferences, delegate: EasyTipViewDelegate? = nil){
+    public class func show(animated: Bool = true, forView view: UIView, withinSuperview superview: UIView? = nil, text: String, preferences: Preferences = EasyTipView.globalPreferences, delegate: EasyTipViewDelegate? = nil){
         
         let ev = EasyTipView(text: text, preferences: preferences, delegate: delegate)
+        ev.show(animated: animated, forView: view, withinSuperview: superview)
+    }
+    
+    /**
+     Presents an EasyTipView pointing to a particular UIView instance within the specified superview
+     
+     - parameter animated:    Pass true to animate the presentation.
+     - parameter view:        The UIView instance which the EasyTipView will be pointing to.
+     - parameter superview:   A view which is part of the UIView instances superview hierarchy. Ignore this parameter in order to display the EasyTipView within the main window.
+     - parameter customView:  The view to be displayed.
+     - parameter preferences: The preferences which will configure the EasyTipView.
+     - parameter delegate:    The delegate.
+     */
+    public class func show(animated: Bool = true, forView view: UIView, withinSuperview superview: UIView? = nil, customView: UIView, preferences: Preferences = EasyTipView.globalPreferences, delegate: EasyTipViewDelegate? = nil){
+        
+        let ev = EasyTipView(customView: customView, preferences: preferences, delegate: delegate)
         ev.show(animated: animated, forView: view, withinSuperview: superview)
     }
     
@@ -92,6 +108,15 @@ public extension EasyTipView {
     public func show(animated: Bool = true, forView view: UIView, withinSuperview superview: UIView? = nil) {
         
         precondition(superview == nil || view.hasSuperview(superview!), "The supplied superview <\(superview!)> is not a direct nor an indirect superview of the supplied reference view <\(view)>. The superview passed to this method should be a direct or an indirect superview of the reference view. To display the tooltip within the main window, ignore the superview parameter.")
+        
+        if let customView = self.customView {
+            addSubview(customView)
+            let widthConstraint = NSLayoutConstraint(item: customView, attribute: .width, relatedBy: .lessThanOrEqual, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: preferences.positioning.maxWidth)
+            let heightConstraint = NSLayoutConstraint(item: customView, attribute: .height, relatedBy: .greaterThanOrEqual, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 44)
+            addConstraints([widthConstraint, heightConstraint])
+            customView.layoutIfNeeded()
+            customViewSize = customView.frame.size
+        }
         
         let superview = superview ?? UIApplication.shared.windows.first!
         
@@ -243,6 +268,8 @@ open class EasyTipView: UIView {
     fileprivate(set) open var preferences: Preferences
     open let text: String
     
+    fileprivate var customView: UIView?
+    
     // MARK: - Lazy variables -
     
     fileprivate lazy var textSize: CGSize = {
@@ -263,13 +290,20 @@ open class EasyTipView: UIView {
         return textSize
         }()
     
+    fileprivate var customViewSize: CGSize = .zero
+    
     fileprivate lazy var contentSize: CGSize = {
         
         [unowned self] in
         
-        var contentSize = CGSize(width: self.textSize.width + self.preferences.positioning.textHInset * 2 + self.preferences.positioning.bubbleHInset * 2, height: self.textSize.height + self.preferences.positioning.textVInset * 2 + self.preferences.positioning.bubbleVInset * 2 + self.preferences.drawing.arrowHeight)
-        
-        return contentSize
+        if let customView = self.customView {
+            return CGSize(
+                width: customView.frame.width + self.preferences.positioning.bubbleHInset * 2,
+                height: customView.frame.height + self.preferences.positioning.bubbleVInset * 2 + self.preferences.drawing.arrowHeight
+            )
+        } else {
+            return CGSize(width: self.textSize.width + self.preferences.positioning.textHInset * 2 + self.preferences.positioning.bubbleHInset * 2, height: self.textSize.height + self.preferences.positioning.textVInset * 2 + self.preferences.positioning.bubbleVInset * 2 + self.preferences.drawing.arrowHeight)
+        }
         }()
     
     // MARK: - Static variables -
@@ -281,6 +315,20 @@ open class EasyTipView: UIView {
     public init (text: String, preferences: Preferences = EasyTipView.globalPreferences, delegate: EasyTipViewDelegate? = nil){
         
         self.text = text
+        self.customView = nil
+        self.preferences = preferences
+        self.delegate = delegate
+        
+        super.init(frame: CGRect.zero)
+        
+        self.backgroundColor = UIColor.clear
+        NotificationCenter.default.addObserver(self, selector: #selector(handleRotation), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+    }
+    
+    public init (customView: UIView?, preferences: Preferences = EasyTipView.globalPreferences, delegate: EasyTipViewDelegate? = nil){
+        
+        self.text = ""
+        self.customView = customView
         self.preferences = preferences
         self.delegate = delegate
         
@@ -557,7 +605,11 @@ open class EasyTipView: UIView {
         context.saveGState ()
         
         drawBubble(bubbleFrame, arrowPosition: preferences.drawing.arrowPosition, context: context)
-        drawText(bubbleFrame, context: context)
+        if let customView = self.customView {
+            customView.frame.origin = bubbleFrame.origin
+        } else {
+            drawText(bubbleFrame, context: context)
+        }
         
         context.restoreGState()
     }
