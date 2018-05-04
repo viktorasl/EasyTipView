@@ -116,6 +116,8 @@ public extension EasyTipView {
             addConstraints([widthConstraint, heightConstraint])
             customView.layoutIfNeeded()
             customViewSize = customView.frame.size
+            removeConstraints([widthConstraint, heightConstraint])
+            customView.translatesAutoresizingMaskIntoConstraints = true
         }
         
         let superview = superview ?? UIApplication.shared.windows.first!
@@ -296,10 +298,10 @@ open class EasyTipView: UIView {
         
         [unowned self] in
         
-        if let customView = self.customView {
+        if self.customView != nil {
             return CGSize(
-                width: customView.frame.width + self.preferences.positioning.bubbleHInset * 2,
-                height: customView.frame.height + self.preferences.positioning.bubbleVInset * 2 + self.preferences.drawing.arrowHeight
+                width: self.customViewSize.width + self.preferences.positioning.bubbleHInset * 2,
+                height: self.customViewSize.height + self.preferences.positioning.bubbleVInset * 2 + self.preferences.drawing.arrowHeight
             )
         } else {
             return CGSize(width: self.textSize.width + self.preferences.positioning.textHInset * 2 + self.preferences.positioning.bubbleHInset * 2, height: self.textSize.height + self.preferences.positioning.textVInset * 2 + self.preferences.positioning.bubbleVInset * 2 + self.preferences.drawing.arrowHeight)
@@ -606,6 +608,7 @@ open class EasyTipView: UIView {
         
         drawBubble(bubbleFrame, arrowPosition: preferences.drawing.arrowPosition, context: context)
         if let customView = self.customView {
+            customView.frame.size = customViewSize
             customView.frame.origin = bubbleFrame.origin
         } else {
             drawText(bubbleFrame, context: context)
