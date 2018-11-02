@@ -278,7 +278,7 @@ open class EasyTipView: UIView {
         
         [unowned self] in
         
-        var attributes: [NSAttributedStringKey : Any] = [.font : self.preferences.drawing.font]
+        var attributes: [NSAttributedString.Key : Any] = [.font : self.preferences.drawing.font]
         
         var textSize = self.text.boundingRect(with: CGSize(width: self.preferences.positioning.maxWidth, height: CGFloat.greatestFiniteMagnitude), options: NSStringDrawingOptions.usesLineFragmentOrigin, attributes: attributes, context: nil).size
         
@@ -324,7 +324,7 @@ open class EasyTipView: UIView {
         super.init(frame: CGRect.zero)
         
         self.backgroundColor = UIColor.clear
-        NotificationCenter.default.addObserver(self, selector: #selector(handleRotation), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleRotation), name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
     public init (customView: UIView?, preferences: Preferences = EasyTipView.globalPreferences, delegate: EasyTipViewDelegate? = nil){
@@ -337,7 +337,7 @@ open class EasyTipView: UIView {
         super.init(frame: CGRect.zero)
         
         self.backgroundColor = UIColor.clear
-        NotificationCenter.default.addObserver(self, selector: #selector(handleRotation), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleRotation), name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
     deinit
